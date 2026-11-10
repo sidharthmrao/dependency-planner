@@ -1,6 +1,6 @@
 # Dependency-based Project Planner v0.1.0
 
-Download the HTML file and open it in a modern browser. The app works offline and does not require installation.
+Download the v0.1.0 ZIP from the repository, unzip it, and open the HTML file in a modern browser. The app works offline and does not require installation.
 
 This first release supports task descriptions, required time estimates, drag connections for dependencies, priority numbers, and a remaining critical path estimate.
 

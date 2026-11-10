@@ -15,6 +15,8 @@ Open the local URL shown by Vite. Use `npm run build` to check the production bu
 
 Run `npm run build:release` to create a self-contained HTML file in `release/`. Download or copy that file and open it in a modern browser; it needs no server or installation. A GitHub Actions workflow attaches the same file to a GitHub Release when a matching version tag is pushed.
 
+The current v0.1.0 browser download is [Dependency-based-Project-Planner-v0.1.0.zip](downloads/Dependency-based-Project-Planner-v0.1.0.zip). Unzip it and open the HTML file inside.
+
 Browser storage is separate for the localhost preview and for downloaded files. Use **Export data** in the preview and **Import data** in the downloaded file to move tasks. Export again before switching to a newer download. If a browser blocks storage for local files, the app shows a warning; export before closing it.
 
 Use **Add task** to open a popup for a name, optional description, and required estimated duration in hours. Each node shows these details and a completion checkbox; use **Edit** inside the node to change them. Drag from a prerequisite's right handle to a dependent task's left handle to add a dependency. Select an arrow and press Delete or Backspace to remove it. The graph automatically lays out prerequisites before dependent tasks. A blocked task becomes ready when its prerequisites are complete. Circular dependencies are prevented.

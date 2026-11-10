@@ -22,7 +22,9 @@ jobs:
       - name: Check version tag
         run: test "v$(node -p 'require("./package.json").version')" = "$GITHUB_REF_NAME"
       - run: npm run build:release
+      - name: Package ZIP download
+        run: zip -X -j "release/Dependency-based-Project-Planner-${GITHUB_REF_NAME}.zip" release/*.html
       - name: Publish browser download
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" release/*.html --verify-tag --title "Dependency-based Project Planner $GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
+        run: gh release create "$GITHUB_REF_NAME" release/*.html release/*.zip --verify-tag --title "Dependency-based Project Planner $GITHUB_REF_NAME" --notes-file RELEASE_NOTES.md
