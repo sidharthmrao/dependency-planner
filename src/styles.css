@@ -76,10 +76,13 @@ h1 { margin: 0; font-size: 2rem; }
 .node-editor label { display: flex; flex-direction: column; gap: 4px; font-size: .75rem; font-weight: 600; }
 .node-editor input, .node-editor textarea { width: 100%; border: 1px solid #b8c0c9; border-radius: 4px; padding: 6px; background: white; font-size: .84rem; font-weight: 400; }
 .node-editor textarea { resize: none; }
-.node-actions { display: flex; gap: 7px; }
+.node-actions, .node-actions-right { display: flex; gap: 7px; }
+.node-actions { justify-content: space-between; }
 .node-actions button { padding: 6px 10px; font-size: .78rem; }
 .node-actions .secondary { color: #344054; background: #e9edf2; }
 .node-actions .secondary:hover { background: #dae1e9; }
+.node-actions .danger { color: #9b2d2d; background: #fff0f0; }
+.node-actions .danger:hover { background: #fbdede; }
 
 @media (max-width: 760px) {
   .app-shell { padding-top: 24px; }

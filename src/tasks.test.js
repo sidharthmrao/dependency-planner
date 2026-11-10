@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadTasks, parseImportedTasks, saveTasks } from './tasks.js';
+import { loadTasks, parseImportedTasks, removeTask, saveTasks } from './tasks.js';
 
 test('previously saved tasks without estimates receive one hour', () => {
   const originalStorage = globalThis.localStorage;
@@ -50,4 +50,16 @@ test('save failure is reported without crashing the app', () => {
   } finally {
     globalThis.localStorage = originalStorage;
   }
+});
+
+test('deleting a task removes its dependency links from other tasks', () => {
+  const tasks = [
+    { id: 'a', dependencyIds: [] },
+    { id: 'b', dependencyIds: ['a'] },
+    { id: 'c', dependencyIds: ['a', 'b'] },
+  ];
+  assert.deepEqual(removeTask(tasks, 'a'), [
+    { id: 'b', dependencyIds: [] },
+    { id: 'c', dependencyIds: ['b'] },
+  ]);
 });

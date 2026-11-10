@@ -21,7 +21,7 @@ const NODE_HEIGHT = 220;
 const EDIT_HEIGHT = 325;
 
 function TaskNode({ data }) {
-  const { task, status, priority, critical, editing, onEdit, onCancel, onSave, onToggleComplete } = data;
+  const { task, status, priority, critical, editing, onEdit, onCancel, onSave, onDelete, onToggleComplete } = data;
 
   function save(event) {
     event.preventDefault();
@@ -54,8 +54,21 @@ function TaskNode({ data }) {
             <input name="estimatedHours" type="number" min="0.001" step="any" defaultValue={task.estimatedHours ?? ''} required />
           </label>
           <div className="node-actions">
-            <button type="submit">Save</button>
-            <button type="button" className="secondary" onClick={onCancel}>Cancel</button>
+            <button
+              type="button"
+              className="danger"
+              onClick={() => {
+                if (window.confirm(`Delete "${task.title}"? Its dependency links will also be removed.`)) {
+                  onDelete(task.id);
+                }
+              }}
+            >
+              Delete
+            </button>
+            <span className="node-actions-right">
+              <button type="button" className="secondary" onClick={onCancel}>Cancel</button>
+              <button type="submit">Save</button>
+            </span>
           </div>
         </form>
       ) : (
@@ -160,7 +173,7 @@ export function layoutGraph(tasks, editingId = null, actions = {}, options = {})
   return { nodes, edges };
 }
 
-function GraphCanvas({ tasks, priorityRanks, criticalPath, showCriticalPath, onUpdateTask, onToggleComplete, onAddDependency, onRemoveDependencies }) {
+function GraphCanvas({ tasks, priorityRanks, criticalPath, showCriticalPath, onUpdateTask, onDeleteTask, onToggleComplete, onAddDependency, onRemoveDependencies }) {
   const [editingId, setEditingId] = useState(null);
   const layout = useMemo(
     () => layoutGraph(
@@ -173,11 +186,15 @@ function GraphCanvas({ tasks, priorityRanks, criticalPath, showCriticalPath, onU
           onUpdateTask(id, changes);
           setEditingId(null);
         },
+        onDelete: (id) => {
+          onDeleteTask(id);
+          setEditingId(null);
+        },
         onToggleComplete,
       },
       { priorityRanks, criticalPath, showCriticalPath },
     ),
-    [tasks, editingId, priorityRanks, criticalPath, showCriticalPath, onUpdateTask, onToggleComplete],
+    [tasks, editingId, priorityRanks, criticalPath, showCriticalPath, onUpdateTask, onDeleteTask, onToggleComplete],
   );
   const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layout.edges);

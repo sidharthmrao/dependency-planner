@@ -23,6 +23,16 @@ export function saveTasks(tasks) {
   }
 }
 
+export function removeTask(tasks, taskId) {
+  if (!tasks.some((task) => task.id === taskId)) return tasks;
+  return tasks
+    .filter((task) => task.id !== taskId)
+    .map((task) => ({
+      ...task,
+      dependencyIds: task.dependencyIds.filter((id) => id !== taskId),
+    }));
+}
+
 export function parseImportedTasks(data) {
   const rawTasks = Array.isArray(data) ? data : data?.tasks;
   if (!Array.isArray(rawTasks)) throw new Error('The file does not contain a task list.');

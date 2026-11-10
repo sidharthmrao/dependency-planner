@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import TaskGraph from './TaskGraph.jsx';
-import { loadTasks, parseImportedTasks, saveTasks, wouldCreateCycle } from './tasks.js';
+import { loadTasks, parseImportedTasks, removeTask, saveTasks, wouldCreateCycle } from './tasks.js';
 
 function AddTask({ onAdd }) {
   const dialogRef = useRef(null);
@@ -149,6 +149,10 @@ export default function App() {
     );
   }
 
+  function deleteTask(taskId) {
+    setTasks((current) => removeTask(current, taskId));
+  }
+
   function addDependency(taskId, dependencyId) {
     setTasks((current) => {
       if (wouldCreateCycle(current, taskId, dependencyId)) return current;
@@ -188,6 +192,7 @@ export default function App() {
       <TaskGraph
         tasks={tasks}
         onUpdateTask={updateTask}
+        onDeleteTask={deleteTask}
         onToggleComplete={toggleComplete}
         onAddDependency={addDependency}
         onRemoveDependencies={removeDependencies}
