@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import TaskGraph from './TaskGraph.jsx';
-import { loadTasks, saveTasks, wouldCreateCycle } from './tasks.js';
+import { loadTasks, parseImportedTasks, saveTasks, wouldCreateCycle } from './tasks.js';
 
 function AddTask({ onAdd }) {
   const dialogRef = useRef(null);
@@ -90,10 +90,50 @@ function AddTask({ onAdd }) {
   );
 }
 
+function DataTransfer({ tasks, onImport }) {
+  const inputRef = useRef(null);
+  const [error, setError] = useState('');
+
+  function exportData() {
+    const contents = JSON.stringify({ version: 1, tasks }, null, 2);
+    const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'dependency-planner-tasks.json';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function importData(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    try {
+      const imported = parseImportedTasks(JSON.parse(await file.text()));
+      if (tasks.length > 0 && !window.confirm('Replace your current tasks with the imported tasks?')) return;
+      onImport(imported);
+      setError('');
+    } catch (problem) {
+      setError(problem instanceof SyntaxError ? 'This is not a valid JSON file.' : problem.message);
+    }
+  }
+
+  return (
+    <div className="data-transfer">
+      <button type="button" onClick={exportData}>Export data</button>
+      <button type="button" onClick={() => inputRef.current.click()}>Import data</button>
+      <input ref={inputRef} type="file" accept=".json,application/json" onChange={importData} hidden />
+      {error && <span role="alert" className="import-error">{error}</span>}
+    </div>
+  );
+}
+
 export default function App() {
   const [tasks, setTasks] = useState(loadTasks);
+  const [storageAvailable, setStorageAvailable] = useState(true);
 
-  useEffect(() => saveTasks(tasks), [tasks]);
+  useEffect(() => setStorageAvailable(saveTasks(tasks)), [tasks]);
 
   function updateTask(taskId, changes) {
     setTasks((current) =>
@@ -135,8 +175,16 @@ export default function App() {
     <main className="app-shell">
       <header className="page-top">
         <h1>Dependency-based Project Planner</h1>
-        <AddTask onAdd={(task) => setTasks((current) => [...current, task])} />
+        <div className="header-actions">
+          <DataTransfer tasks={tasks} onImport={setTasks} />
+          <AddTask onAdd={(task) => setTasks((current) => [...current, task])} />
+        </div>
       </header>
+      {!storageAvailable && (
+        <p className="storage-warning" role="alert">
+          This browser cannot save tasks for this file. Export your data before closing it.
+        </p>
+      )}
       <TaskGraph
         tasks={tasks}
         onUpdateTask={updateTask}

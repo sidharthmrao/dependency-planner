@@ -14,6 +14,12 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px
 .app-shell { max-width: 1400px; margin: 0 auto; padding: 28px 20px 40px; }
 .page-top { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 26px; }
 h1 { margin: 0; font-size: 2rem; }
+.header-actions, .data-transfer { display: flex; align-items: center; gap: 8px; }
+.data-transfer { position: relative; }
+.data-transfer button { border: 1px solid #b8c0c9; border-radius: 5px; padding: 9px 11px; color: #344054; background: white; }
+.data-transfer button:hover { background: #eef2f6; }
+.import-error { position: absolute; top: 100%; right: 0; z-index: 2; width: 250px; padding: 8px; color: #842d2d; background: #fff0f0; font-size: .78rem; }
+.storage-warning { margin: -10px 0 16px; border: 1px solid #e8bd65; border-radius: 5px; padding: 8px 10px; color: #785000; background: #fff8e9; font-size: .88rem; }
 
 .open-task-dialog, .dialog-actions button, .node-actions button { border: 0; border-radius: 5px; padding: 10px 15px; color: white; background: #285a9b; }
 .open-task-dialog:hover, .dialog-actions button:hover, .node-actions button:hover { background: #1f4c86; }
@@ -78,6 +84,7 @@ h1 { margin: 0; font-size: 2rem; }
 @media (max-width: 760px) {
   .app-shell { padding-top: 24px; }
   .page-top { align-items: flex-start; flex-direction: column; }
+  .header-actions { flex-wrap: wrap; }
   .graph-heading { display: block; }
   .critical-control { align-items: flex-start; max-width: none; margin-bottom: 12px; text-align: left; }
   .graph-canvas { height: 65vh; min-height: 430px; }
