@@ -50,7 +50,7 @@ export function parseImportedTasks(data) {
     ) {
       throw new Error('The file contains an invalid task.');
     }
-    return {
+    const normalized = {
       id: task.id,
       title: task.title.trim(),
       description: typeof task.description === 'string' ? task.description : '',
@@ -60,6 +60,14 @@ export function parseImportedTasks(data) {
       dependencyIds: [...task.dependencyIds],
       completed: task.completed === true,
     };
+    if (
+      task.position &&
+      Number.isFinite(task.position.x) &&
+      Number.isFinite(task.position.y) &&
+      Math.abs(task.position.x) <= 1000000 &&
+      Math.abs(task.position.y) <= 1000000
+    ) normalized.position = { x: task.position.x, y: task.position.y };
+    return normalized;
   });
 
   const ids = new Set(tasks.map((task) => task.id));

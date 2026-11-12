@@ -32,6 +32,13 @@ test('exported tasks can be imported and old estimates are filled', () => {
   assert.deepEqual(imported[1].dependencyIds, ['a']);
 });
 
+test('version 2 imports preserve valid board positions', () => {
+  const [task] = parseImportedTasks({ version: 2, tasks: [
+    { id: 'a', title: 'Placed task', dependencyIds: [], position: { x: -120, y: 340 } },
+  ] });
+  assert.deepEqual(task.position, { x: -120, y: 340 });
+});
+
 test('import rejects circular dependencies', () => {
   assert.throws(
     () => parseImportedTasks({ tasks: [

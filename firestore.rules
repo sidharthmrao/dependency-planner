@@ -1,0 +1,175 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function memberPath(teamId, uid) { return /databases/$(database)/documents/teams/$(teamId)/members/$(uid); }
+    function membership(teamId) { return get(memberPath(teamId, request.auth.uid)); }
+    function isMember(teamId) { return signedIn() && membership(teamId).data.role in ['owner', 'admin', 'member']; }
+    function isAdmin(teamId) { return signedIn() && membership(teamId).data.role in ['owner', 'admin']; }
+    function plannerPath(teamId, plannerId) { return /databases/$(database)/documents/teams/$(teamId)/planners/$(plannerId); }
+
+    function validPosition(position) {
+      return position == null || (
+        position is map
+        && position.keys().hasOnly(['x', 'y'])
+        && position.x is number && position.y is number
+        && position.x >= -1000000 && position.x <= 1000000
+        && position.y >= -1000000 && position.y <= 1000000
+      );
+    }
+
+    function validTask(data) {
+      return data.keys().hasOnly(['title', 'description', 'estimatedHours', 'completed', 'dependencyIds', 'position', 'createdBy', 'createdAt', 'updatedBy', 'updatedAt', 'layoutUpdatedBy', 'layoutUpdatedAt', 'revision'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 160
+        && data.description is string && data.description.size() <= 4000
+        && data.estimatedHours is number && data.estimatedHours > 0 && data.estimatedHours <= 100000
+        && data.completed is bool
+        && data.dependencyIds is list && data.dependencyIds.size() <= 100
+        && data.createdBy is string && data.updatedBy is string
+        && data.revision is int && data.revision >= 1
+        && validPosition(data.get('position', null))
+        && (!data.keys().hasAny(['layoutUpdatedBy']) || data.layoutUpdatedBy is string)
+        && (!data.keys().hasAny(['layoutUpdatedAt']) || data.layoutUpdatedAt is timestamp);
+    }
+
+    function validPublicTask(data) {
+      return data.keys().hasOnly(['title', 'description', 'estimatedHours', 'completed', 'dependencyIds', 'position'])
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 160
+        && data.description is string && data.description.size() <= 4000
+        && data.estimatedHours is number && data.estimatedHours > 0
+        && data.completed is bool
+        && data.dependencyIds is list && data.dependencyIds.size() <= 100
+        && validPosition(data.get('position', null));
+    }
+
+    function graphMatches(teamId, plannerId, taskId, dependencyIds) {
+      return getAfter(plannerPath(teamId, plannerId)).data.dependencyGraph.get(taskId, []) == dependencyIds;
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if signedIn() && request.auth.uid == uid;
+      allow delete: if false;
+
+      match /teamRefs/{teamId} {
+        allow read: if signedIn() && request.auth.uid == uid;
+        allow create, update: if signedIn() && request.auth.uid == uid && existsAfter(memberPath(teamId, uid));
+        allow delete: if signedIn() && (request.auth.uid == uid || isAdmin(teamId));
+      }
+    }
+
+    match /teams/{teamId} {
+      allow read: if isMember(teamId);
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 80;
+      allow update: if isAdmin(teamId)
+        && request.resource.data.createdBy == resource.data.createdBy
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(teamId);
+        allow create: if signedIn() && request.auth.uid == uid && (
+          (request.resource.data.role == 'owner'
+            && getAfter(/databases/$(database)/documents/teams/$(teamId)).data.createdBy == uid)
+          ||
+          (request.resource.data.role in ['admin', 'member']
+            && request.resource.data.invitationId is string
+            && get(/databases/$(database)/documents/teams/$(teamId)/invitations/$(request.resource.data.invitationId)).data.status == 'pending'
+            && get(/databases/$(database)/documents/teams/$(teamId)/invitations/$(request.resource.data.invitationId)).data.email == request.auth.token.email)
+        );
+        allow update: if false;
+        allow delete: if isAdmin(teamId) && resource.data.role != 'owner';
+      }
+
+      match /invitations/{invitationId} {
+        allow read: if isAdmin(teamId) || (signedIn() && resource.data.email == request.auth.token.email);
+        allow create: if isAdmin(teamId)
+          && request.resource.data.email is string
+          && request.resource.data.role in ['admin', 'member']
+          && request.resource.data.status == 'pending'
+          && request.resource.data.invitedBy == request.auth.uid;
+        allow update: if signedIn()
+          && resource.data.email == request.auth.token.email
+          && resource.data.status == 'pending'
+          && request.resource.data.status == 'accepted'
+          && request.resource.data.acceptedBy == request.auth.uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'acceptedBy', 'acceptedAt']);
+        allow delete: if isAdmin(teamId);
+      }
+
+      match /planners/{plannerId} {
+        allow read: if isMember(teamId);
+        allow create: if isMember(teamId)
+          && request.resource.data.createdBy == request.auth.uid
+          && request.resource.data.archived == false
+          && request.resource.data.taskCount is int
+          && request.resource.data.taskCount >= 0 && request.resource.data.taskCount <= 100
+          && request.resource.data.graphRevision is int
+          && request.resource.data.dependencyGraph is map
+          && request.resource.data.dependencyGraph.size() <= 100
+          && request.resource.data.externalSharingEnabled == false
+          && request.resource.data.externalShareToken == null;
+        allow update: if isMember(teamId)
+          && request.resource.data.createdBy == resource.data.createdBy
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.taskCount is int
+          && request.resource.data.taskCount >= 0 && request.resource.data.taskCount <= 100
+          && request.resource.data.graphRevision is int
+          && request.resource.data.graphRevision >= resource.data.graphRevision
+          && request.resource.data.dependencyGraph is map
+          && request.resource.data.dependencyGraph.size() <= 100
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['externalSharingEnabled', 'externalShareToken']) || isAdmin(teamId));
+        allow delete: if false;
+
+        match /tasks/{taskId} {
+          allow read: if isMember(teamId);
+          allow create: if isMember(teamId)
+            && validTask(request.resource.data)
+            && request.resource.data.createdBy == request.auth.uid
+            && request.resource.data.updatedBy == request.auth.uid
+            && graphMatches(teamId, plannerId, taskId, request.resource.data.dependencyIds);
+          allow update: if isMember(teamId)
+            && validTask(request.resource.data)
+            && request.resource.data.createdBy == resource.data.createdBy
+            && request.resource.data.createdAt == resource.data.createdAt
+            && (
+              (request.resource.data.updatedBy == request.auth.uid
+                && request.resource.data.revision == resource.data.revision + 1
+                && request.resource.data.get('position', null) == resource.data.get('position', null)
+                && request.resource.data.get('layoutUpdatedBy', null) == resource.data.get('layoutUpdatedBy', null)
+                && request.resource.data.get('layoutUpdatedAt', null) == resource.data.get('layoutUpdatedAt', null)
+                && graphMatches(teamId, plannerId, taskId, request.resource.data.dependencyIds))
+              ||
+              (request.resource.data.revision == resource.data.revision
+                && request.resource.data.dependencyIds == resource.data.dependencyIds
+                && request.resource.data.layoutUpdatedBy == request.auth.uid
+                && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['position', 'layoutUpdatedBy', 'layoutUpdatedAt']))
+            );
+          allow delete: if isMember(teamId)
+            && !getAfter(plannerPath(teamId, plannerId)).data.dependencyGraph.keys().hasAny([taskId]);
+        }
+      }
+    }
+
+    match /publicPlannerShares/{token} {
+      allow read: if resource.data.enabled == true;
+      allow create: if isAdmin(request.resource.data.teamId) && request.resource.data.enabled == true;
+      allow update: if isMember(resource.data.teamId)
+        && request.resource.data.teamId == resource.data.teamId
+        && request.resource.data.plannerId == resource.data.plannerId
+        && request.resource.data.enabled == true;
+      allow delete: if isAdmin(resource.data.teamId);
+
+      match /tasks/{taskId} {
+        allow read: if get(/databases/$(database)/documents/publicPlannerShares/$(token)).data.enabled == true;
+        allow create, update: if validPublicTask(request.resource.data)
+          && isMember(getAfter(/databases/$(database)/documents/publicPlannerShares/$(token)).data.teamId);
+        allow delete: if isMember(get(/databases/$(database)/documents/publicPlannerShares/$(token)).data.teamId);
+      }
+    }
+  }
+}

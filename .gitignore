@@ -2,3 +2,9 @@ node_modules/
 dist/
 release/
 .DS_Store
+.env
+.env.local
+.firebase/
+firebase-debug.log
+firestore-debug.log
+functions/node_modules/

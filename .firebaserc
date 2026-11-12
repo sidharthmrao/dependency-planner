@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "shared-dependency-planner",
+    "production": "shared-dependency-planner"
+  }
+}
