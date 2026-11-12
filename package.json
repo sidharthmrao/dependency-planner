@@ -8,7 +8,7 @@
     "build": "vite build",
     "build:release": "npm run build && node scripts/package-release.mjs",
     "build:pages": "node scripts/build-pages.mjs",
-    "test": "node src/graphMetrics.test.js && node src/tasks.test.js && node --test src/graph/layout.test.js && node src/graph/exports.test.js",
+    "test": "node src/graphMetrics.test.js && node src/tasks.test.js && node --test src/firebase/authFlow.test.js src/graph/layout.test.js && node src/graph/exports.test.js",
     "test:rules": "npx firebase-tools@14.27.0 emulators:exec --only firestore \"node --test firestore.rules.test.js\"",
     "preview": "vite preview --host 127.0.0.1"
   },

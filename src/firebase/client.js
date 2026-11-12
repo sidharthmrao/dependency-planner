@@ -1,6 +1,6 @@
 import { getApp, getApps, initializeApp } from 'firebase/app';
 import { initializeAppCheck, ReCaptchaV3Provider } from 'firebase/app-check';
-import { connectAuthEmulator, getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
+import { connectAuthEmulator, getAuth, getRedirectResult, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth';
 import {
   connectFirestoreEmulator,
   getFirestore,
@@ -8,6 +8,7 @@ import {
   persistentLocalCache,
   persistentMultipleTabManager,
 } from 'firebase/firestore';
+import { prefersRedirectSignIn } from './authFlow.js';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -49,7 +50,21 @@ export { auth, db };
 
 export async function signInWithGoogle() {
   if (!auth) return null;
-  return signInWithPopup(auth, new GoogleAuthProvider());
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  if (prefersRedirectSignIn(navigator.userAgent, navigator.maxTouchPoints)) return signInWithRedirect(auth, provider);
+  try {
+    return await signInWithPopup(auth, provider);
+  } catch (problem) {
+    if (problem?.code === 'auth/popup-blocked' || problem?.code === 'auth/operation-not-supported-in-this-environment') {
+      return signInWithRedirect(auth, provider);
+    }
+    throw problem;
+  }
+}
+
+export async function completeRedirectSignIn() {
+  return auth ? getRedirectResult(auth) : null;
 }
 
 export async function signOutUser() {

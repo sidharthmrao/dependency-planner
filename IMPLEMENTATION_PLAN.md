@@ -60,6 +60,7 @@ The main architectural change is to separate the local graph state from persiste
 ### Authentication and authorization
 
 - Firebase Authentication with Google sign-in is the only sign-in method in the first version.
+- Serve Firebase's authentication helper from the same `web.app` origin as the application. Use redirect sign-in on mobile/iPadOS, popup sign-in on desktop, and fall back to redirect when a popup is unavailable.
 - Authorization is based on server-stored team membership, never email claims or client-side UI state alone.
 - Firestore Security Rules are the primary read/write boundary.
 - Privileged or graph-wide mutations use Firestore transactions and atomic batches; Security Rules validate identity, membership, roles, and document consistency.

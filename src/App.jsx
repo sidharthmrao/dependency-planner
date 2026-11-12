@@ -71,11 +71,11 @@ function TaskForm({ open, task, onClose, onSave }) {
 }
 
 function SignInPage() {
-  const { user, loading, signIn, demoMode } = useAuth();
+  const { user, loading, signIn, demoMode, authError, clearAuthError } = useAuth();
   const [error, setError] = useState('');
   if (loading) return <LoadingScreen />;
   if (user) return <Navigate to="/teams" replace />;
-  return <main className="auth-page"><section className="auth-panel"><div className="brand-mark"><Network size={27} /></div><p className="eyebrow">Dependency Planner</p><h1>Make the path forward visible.</h1><p>Map shared work, spot blockers, and keep every teammate aligned as plans change.</p><ErrorBanner message={error} /><button className="google-button" type="button" onClick={() => signIn().catch((problem) => setError(problem.message))}>G&nbsp;&nbsp;Continue with Google</button>{demoMode && <p className="microcopy">Local demo mode is active because Firebase credentials are not configured.</p>}<Link className="text-link" to="/help">View the quick guide</Link></section><section className="auth-visual" aria-hidden="true"><div className="visual-card card-a"><span>Research</span><small>Complete</small></div><div className="visual-line line-a" /><div className="visual-card card-b"><span>Prototype</span><small>Ready · 8h</small></div><div className="visual-line line-b" /><div className="visual-card card-c"><span>Team review</span><small>Blocked</small></div></section></main>;
+  return <main className="auth-page"><section className="auth-panel"><div className="brand-mark"><Network size={27} /></div><p className="eyebrow">Dependency Planner</p><h1>Make the path forward visible.</h1><p>Map shared work, spot blockers, and keep every teammate aligned as plans change.</p><ErrorBanner message={error || authError} onClose={() => { setError(''); clearAuthError(); }} /><button className="google-button" type="button" onClick={() => signIn().catch((problem) => setError(problem.message))}>G&nbsp;&nbsp;Continue with Google</button>{demoMode && <p className="microcopy">Local demo mode is active because Firebase credentials are not configured.</p>}<Link className="text-link" to="/help">View the quick guide</Link></section><section className="auth-visual" aria-hidden="true"><div className="visual-card card-a"><span>Research</span><small>Complete</small></div><div className="visual-line line-a" /><div className="visual-card card-b"><span>Prototype</span><small>Ready · 8h</small></div><div className="visual-line line-b" /><div className="visual-card card-c"><span>Team review</span><small>Blocked</small></div></section></main>;
 }
 
 function ProtectedShell() {
